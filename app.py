@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
 # =====================================================
 # CONFIG
@@ -20,7 +19,19 @@ st.set_page_config(
 df = pd.read_csv("dataset_final_indobert.csv")
 
 # =====================================================
-# CUSTOM CSS
+# METRICS PENELITIAN
+# =====================================================
+
+ACCURACY = 83.45
+PRECISION = 83.26
+RECALL = 83.45
+F1_SCORE = 83.28
+
+DATASET_AWAL = 3203
+DATASET_BALANCED = 3444
+
+# =====================================================
+# CSS
 # =====================================================
 
 st.markdown("""
@@ -32,22 +43,22 @@ st.markdown("""
 
 .block-container {
     padding-top: 1rem;
+    max-width: 1200px;
 }
 
-.metric-box {
-    background: white;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+.section-title{
+    font-size:28px;
+    font-weight:700;
+    color:#2563EB;
+    margin-top:20px;
+    margin-bottom:10px;
 }
 
-.section-title {
-    color: #2563EB;
-    font-size: 28px;
-    font-weight: bold;
-    margin-top: 15px;
+.metric-card{
+    background:white;
+    border:1px solid #E5E7EB;
+    border-radius:12px;
+    padding:15px;
 }
 
 </style>
@@ -68,8 +79,8 @@ color:white;
 <h1>🚆 RailWatch AI</h1>
 
 <p style="font-size:18px;">
-Analisis Sentimen dan Tingkat Engagement Komentar TikTok
-terkait Kecelakaan KRL Bekasi Menggunakan IndoBERT
+Analisis Sentimen Komentar TikTok terkait
+Insiden Kecelakaan KRL Bekasi Menggunakan IndoBERT
 </p>
 
 </div>
@@ -86,113 +97,144 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# =====================================================
-# KPI
-# =====================================================
+col1,col2,col3,col4 = st.columns(4)
 
-accuracy = 78.78
-precision = 79.05
-recall = 78.78
-f1 = 78.67
+with col1:
+    st.metric(
+        "📄 Dataset Awal",
+        DATASET_AWAL
+    )
 
-negatif = len(df[df["label"]=="negatif"])
-netral = len(df[df["label"]=="netral"])
-positif = len(df[df["label"]=="positif"])
+with col2:
+    st.metric(
+        "⚖️ Dataset Balanced",
+        DATASET_BALANCED
+    )
+
+with col3:
+    st.metric(
+        "🤖 Model",
+        "IndoBERT"
+    )
+
+with col4:
+    st.metric(
+        "🔄 Oversampling",
+        "Random"
+    )
+
+st.write("")
+
+# =====================================================
+# KPI MODEL
+# =====================================================
 
 col1,col2,col3,col4 = st.columns(4)
 
 with col1:
-    st.metric("📄 Dataset", len(df))
+    st.metric(
+        "🎯 Accuracy",
+        f"{ACCURACY}%"
+    )
 
 with col2:
-    st.metric("🎯 Accuracy", f"{accuracy}%")
+    st.metric(
+        "⚡ Precision",
+        f"{PRECISION}%"
+    )
 
 with col3:
-    st.metric("⚡ Precision", f"{precision}%")
+    st.metric(
+        "📈 Recall",
+        f"{RECALL}%"
+    )
 
 with col4:
-    st.metric("🏆 F1 Score", f"{f1}%")
-
-st.write("")
-
-col5,col6,col7 = st.columns(3)
-
-with col5:
-    st.metric("😡 Negatif", negatif)
-
-with col6:
-    st.metric("😐 Netral", netral)
-
-with col7:
-    st.metric("😊 Positif", positif)
+    st.metric(
+        "🏆 F1 Score",
+        f"{F1_SCORE}%"
+    )
 
 # =====================================================
 # DISTRIBUSI SENTIMEN
 # =====================================================
 
+# =====================================================
+# DISTRIBUSI DATASET
+# =====================================================
+
 st.markdown(
-    "<div class='section-title'>📊 Distribusi Sentimen</div>",
+    "<div class='section-title'>📊 Distribusi Dataset</div>",
     unsafe_allow_html=True
 )
 
-sentiment_counts = (
-    df["label"]
-    .value_counts()
-    .reset_index()
-)
+before_df = pd.DataFrame({
+    "Sentimen":[
+        "Negatif",
+        "Netral",
+        "Positif"
+    ],
+    "Jumlah":[
+        1340,
+        1052,
+        811
+    ]
+})
 
-sentiment_counts.columns = [
-    "Sentimen",
-    "Jumlah"
-]
+after_df = pd.DataFrame({
+    "Sentimen":[
+        "Negatif",
+        "Netral",
+        "Positif"
+    ],
+    "Jumlah":[
+        1340,
+        1052,
+        1052
+    ]
+})
 
-c1,c2 = st.columns(2)
+left,right = st.columns(2)
 
-with c1:
+with left:
 
-    fig = px.pie(
-        sentiment_counts,
-        names="Sentimen",
-        values="Jumlah",
-        hole=0.65,
-        color="Sentimen",
-        color_discrete_map={
-            "negatif":"#EF4444",
-            "netral":"#F59E0B",
-            "positif":"#10B981"
-        }
-    )
+    st.subheader("Before Oversampling")
 
-    fig.update_layout(
-        title="Donut Chart Sentimen",
-        paper_bgcolor="white"
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-with c2:
-
-    fig2 = px.bar(
-        sentiment_counts,
+    fig_before = px.bar(
+        before_df,
         x="Sentimen",
         y="Jumlah",
         color="Sentimen",
         color_discrete_map={
-            "negatif":"#EF4444",
-            "netral":"#F59E0B",
-            "positif":"#10B981"
+            "Negatif":"#EF4444",
+            "Netral":"#F59E0B",
+            "Positif":"#10B981"
         }
     )
 
-    fig2.update_layout(
-        title="Jumlah Komentar per Sentimen"
+    st.plotly_chart(
+        fig_before,
+        use_container_width=True
+    )
+
+with right:
+
+    st.subheader("After Oversampling")
+
+    fig_after = px.bar(
+        after_df,
+        x="Sentimen",
+        y="Jumlah",
+        color="Sentimen",
+        color_discrete_map={
+            "Negatif":"#EF4444",
+            "Netral":"#F59E0B",
+            "Positif":"#10B981"
+        }
     )
 
     st.plotly_chart(
-        fig2,
+        fig_after,
         use_container_width=True
     )
 
@@ -201,16 +243,17 @@ with c2:
 # =====================================================
 
 st.markdown(
-    "<div class='section-title'>☁️ Top Keywords Discussion</div>",
+    "<div class='section-title'>☁️ Word Cloud</div>",
     unsafe_allow_html=True
 )
 
 col1,col2,col3 = st.columns([1,4,1])
 
 with col2:
+
     st.image(
         "assets/WordCloud.png",
-        width=750
+        width=700
     )
 
 # =====================================================
@@ -228,165 +271,53 @@ with left:
 
     st.image(
         "assets/confusionmatrix.png",
-            width=500
+        width=500
     )
 
 with right:
 
-    categories = [
-        "Accuracy",
-        "Precision",
-        "Recall",
-        "F1 Score"
-    ]
-
-    values = [
-        accuracy,
-        precision,
-        recall,
-        f1
-    ]
-
-    fig = go.Figure()
-
-    fig.add_trace(
-        go.Scatterpolar(
-            r=values,
-            theta=categories,
-            fill="toself",
-            name="IndoBERT"
-        )
-    )
-
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0,100]
-            )
-        ),
-        title="Radar Chart Performa Model",
-        paper_bgcolor="white"
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-# =====================================================
-# ENGAGEMENT ANALYSIS
-# =====================================================
-
-st.markdown(
-    "<div class='section-title'>🔥 Engagement Analysis</div>",
-    unsafe_allow_html=True
-)
-
-engagement_data = (
-    df.groupby("label")["engagement"]
-    .sum()
-    .reset_index()
-)
-
-fig = px.bar(
-    engagement_data,
-    x="engagement",
-    y="label",
-    orientation="h",
-    color="label",
-    color_discrete_map={
-        "negatif":"#EF4444",
-        "netral":"#F59E0B",
-        "positif":"#10B981"
-    },
-    text="engagement"
-)
-
-fig.update_layout(
-    title="Total Engagement per Sentimen",
-    yaxis_title="Sentimen",
-    xaxis_title="Engagement"
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-# =====================================================
-# TOP KOMENTAR VIRAL
-# =====================================================
-
-st.markdown(
-    "<div class='section-title'>🔥 Top 10 Komentar Viral</div>",
-    unsafe_allow_html=True
-)
-
-top = (
-    df.sort_values(
-        by="engagement",
-        ascending=False
-    )
-    .head(10)
-)
-
-st.dataframe(
-    top[
-        [
-            "clean_comment",
-            "label",
-            "engagement"
-        ]
-    ],
-    use_container_width=True
-)
-
-# =====================================================
-# DISTRIBUSI LIKES
-# =====================================================
-
-st.markdown(
-    "<div class='section-title'>❤️ Distribusi Likes</div>",
-    unsafe_allow_html=True
-)
-
-fig = px.histogram(
-    df,
-    x="likes",
-    nbins=30,
-    title="Distribusi Likes Komentar"
-)
-
-fig.update_layout(
-    bargap=0.05
-)
-
-fig.update_layout(
-    title="Distribusi Likes"
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-# =====================================================
-# HEATMAP
-# =====================================================
-
-st.markdown(
-    "<div class='section-title'>📈 Correlation Analysis</div>",
-    unsafe_allow_html=True
-)
-
-col1,col2,col3 = st.columns([1,3,1])
-
-with col2:
     st.image(
-        "assets/heatmap.png",
+        "assets/performa_model.png",
         width=550
     )
+
+# =====================================================
+# CLASSIFICATION REPORT
+# =====================================================
+
+st.markdown(
+    "<div class='section-title'>📑 Classification Report</div>",
+    unsafe_allow_html=True
+)
+
+report_df = pd.DataFrame({
+    "Sentimen":[
+        "Negatif",
+        "Netral",
+        "Positif"
+    ],
+    "Precision":[
+        0.82,
+        0.80,
+        0.88
+    ],
+    "Recall":[
+        0.83,
+        0.73,
+        0.94
+    ],
+    "F1-Score":[
+        0.83,
+        0.76,
+        0.91
+    ]
+})
+
+st.dataframe(
+    report_df,
+    use_container_width=True,
+    hide_index=True
+)
 
 # =====================================================
 # INSIGHT
@@ -405,40 +336,18 @@ border-radius:15px;
 border-left:6px solid #2563EB;
 ">
 
-<h4>Ringkasan Temuan</h4>
+<h4>Ringkasan Temuan Penelitian</h4>
 
 <ul>
-<li>Sentimen negatif mendominasi dengan <b>{negatif}</b> komentar.</li>
-<li>Total engagement tertinggi berasal dari sentimen negatif.</li>
-<li>Model IndoBERT mencapai akurasi <b>{accuracy}%</b>.</li>
-<li>Likes memiliki korelasi paling kuat terhadap engagement.</li>
-<li>Dataset penelitian terdiri dari <b>{len(df)}</b> komentar TikTok.</li>
+<li>Dataset awal terdiri dari <b>{DATASET_AWAL}</b> komentar TikTok.</li>
+<li>Random Oversampling meningkatkan jumlah data menjadi <b>{DATASET_BALANCED}</b> komentar.</li>
+<li>Model IndoBERT memperoleh accuracy sebesar <b>{ACCURACY}%</b>.</li>
+<li>Kelas positif memiliki recall tertinggi sebesar <b>94%</b>.</li>
+<li>Oversampling meningkatkan accuracy dari <b>78.78%</b> menjadi <b>83.45%</b>.</li>
 </ul>
 
 </div>
 """, unsafe_allow_html=True)
-
-# =====================================================
-# SAMPLE DATA
-# =====================================================
-
-st.markdown(
-    "<div class='section-title'>📝 Contoh Dataset</div>",
-    unsafe_allow_html=True
-)
-
-st.dataframe(
-    df[
-        [
-            "clean_comment",
-            "label",
-            "likes",
-            "replies",
-            "engagement"
-        ]
-    ].head(20),
-    use_container_width=True
-)
 
 # =====================================================
 # FOOTER
@@ -449,9 +358,10 @@ st.markdown("---")
 st.caption("""
 RailWatch AI © 2026
 
-Projek Mandiri Informatika
+Projek Mandiri Program Studi Informatika
 
 Rifqi Falih Ramadhan
 
-Analisis Sentimen dan Tingkat Engagement Komentar TikTok terkait Kecelakaan KRL Bekasi Menggunakan IndoBERT
+Analisis Sentimen Komentar TikTok terkait
+Insiden Kecelakaan KRL Bekasi Menggunakan IndoBERT
 """)
